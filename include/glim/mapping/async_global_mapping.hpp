@@ -70,7 +70,7 @@ public:
    */
   void save(const std::string& path);
 
-  std::vector<Eigen::Vector4d> export_points();
+  glk::PLYData export_points();
 
 private:
   void run();
