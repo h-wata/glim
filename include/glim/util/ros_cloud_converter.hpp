@@ -88,6 +88,7 @@ static RawPoints::Ptr extract_raw_points(const PointCloud2& points_msg, const st
   fields["timestamp"] = std::make_pair(&time_type, &time_offset);
   fields[intensity_channel] = std::make_pair(&intensity_type, &intensity_offset);
   fields["rgba"] = std::make_pair(&color_type, &color_offset);
+  fields["rgb"] = std::make_pair(&color_type, &color_offset);
 
   for (const auto& field : points_msg.fields) {
     auto found = fields.find(field.name);
@@ -190,18 +191,27 @@ static RawPoints::Ptr extract_raw_points(const PointCloud2& points_msg, const st
   }
 
   if (color_offset >= 0) {
-    if (color_type != PointField::UINT32) {
-      spdlog::warn("unsupported color type {}", color_type);
-    } else {
-      raw_points->colors.resize(num_points);
-
+    raw_points->colors.resize(num_points);
+    if (color_type == PointField::FLOAT32) {
+      for (int i = 0; i < num_points; i++) {
+        const auto* color_ptr = &points_msg.data[points_msg.point_step * i + color_offset];
+        uint32_t packed = *reinterpret_cast<const uint32_t*>(color_ptr);
+        double r = ((packed >> 0) & 0xFF) / 255.0;
+        double g = ((packed >> 8) & 0xFF) / 255.0;
+        double b = ((packed >> 16) & 0xFF) / 255.0;
+        double a = 1.0;
+        raw_points->colors[i] = Eigen::Vector4d(r, g, b, a);
+      }
+    } else if (color_type == PointField::UINT32) {
       for (int i = 0; i < num_points; i++) {
         const auto* color_ptr = &points_msg.data[points_msg.point_step * i + color_offset];
         raw_points->colors[i] = Eigen::Matrix<unsigned char, 4, 1>(reinterpret_cast<const std::uint8_t*>(color_ptr)).cast<double>() / 255.0;
       }
+    } else {
+      spdlog::warn("unsupported color field: count={}, type={}", points_msg.fields[color_offset].count, color_type);
+      return nullptr;
     }
   }
-
   raw_points->stamp = to_sec(points_msg.header.stamp);
   return raw_points;
 }
