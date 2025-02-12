@@ -94,6 +94,9 @@ PreprocessedFrame::Ptr CloudPreprocessor::preprocess_impl(const RawPoints::Const
   if (raw_points->intensities.size()) {
     frame->intensities = const_cast<double*>(raw_points->intensities.data());
   }
+  if (raw_points->colors.size()) {
+    frame->colors = const_cast<Eigen::Vector4d*>(raw_points->colors.data());
+  }
 
   // Downsampling
   if (params.use_random_grid_downsampling) {
@@ -175,6 +178,9 @@ PreprocessedFrame::Ptr CloudPreprocessor::preprocess_impl(const RawPoints::Const
   preprocessed->points.assign(frame->points, frame->points + frame->size());
   if (frame->intensities) {
     preprocessed->intensities.assign(frame->intensities, frame->intensities + frame->size());
+  }
+  if (frame->colors) {
+    preprocessed->colors.assign(frame->colors, frame->colors + frame->size());
   }
 
   preprocessed->k_neighbors = params.k_correspondences;

@@ -644,6 +644,10 @@ glk::PLYData GlobalMapping::export_points() {
       if (submap->frame->has_intensities()) {
         ply_data.intensities.push_back(submap->frame->intensities[i]);
       }
+      if (submap->frame->has_colors()) {
+        Eigen::Vector4d rgba = submap->frame->colors[i];
+        ply_data.colors.push_back(rgba.cast<float>());
+      }
     }
   }
   return ply_data;
